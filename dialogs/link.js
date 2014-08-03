@@ -323,7 +323,7 @@ CKEDITOR.dialog.add( 'link', function( editor ) {
 	}
 
 	var commonLang = editor.lang.common,
-		linkLang = editor.lang.adv_link; // modified by simo
+		linkLang = editor.lang.link; // modified by simo
 
 	return {
 		title: linkLang.title,
@@ -342,7 +342,7 @@ CKEDITOR.dialog.add( 'link', function( editor ) {
 				'default': 'url',
 				items: [
 					[ linkLang.toUrl, 'url' ],
-					[ linkLang.localPages, 'localPage'], // added by @simo - http://blog.xoundboy.com/?p=393
+					[ 'My Pages', 'localPage'],
 					[ linkLang.toAnchor, 'anchor' ],
 					[ linkLang.toEmail, 'email' ]
 					],
@@ -367,28 +367,34 @@ CKEDITOR.dialog.add( 'link', function( editor ) {
 						label : linkLang.selectPageLabel,
 						id : 'localPage',
 						title : linkLang.selectPageTitle,
-						// items: eval(decodeURIComponent(document.getElementById("pageListJSON").value)),
 						items : [],
-						onLoad : function(element) {
-					        var element_id = '#' + this.getInputElement().$.id;
-					        // ajax call indpired from http://stackoverflow.com/questions/5293920/ckeditor-dynamic-select-in-a-dialog
-					        $.ajax({
-					            type: 'POST',
-					            url: './sample/_link_to_pages.php',
-					            contentType: 'application/json; charset=utf-8',
-					            dataType: 'json',
-					            async: false,
-					            success: function(data) {
-					            	$.each(data, function(index, item) {
-					                    $(element_id).get(0).options[$(element_id).get(0).options.length] = new Option(decodeURIComponent(item[0]), item[1]);
-					                });
-					            },
-					            error:function (xhr, ajaxOptions, thrownError){
-					                alert(xhr.status);
-					                alert(thrownError);
-					            }
-					        });
-					    },
+            onLoad : function(element) {
+                  var element_id = '#' + this.getInputElement().$.id;
+                  
+                  $.ajax({
+                      type: 'POST',
+                      url: '/virtualoffice/menuEngine/getpagenavigationlist.asp',
+                      processData: false,
+                      contentType: 'application/x-www-form-urlencoded',
+                      async: false,
+                      data: 'SCVOAccountID=' + SCVOAccountID,
+                      success: function(data) {
+                        pages = [];
+                        xmlPages = $(data).find('Page');
+                        xmlPages.each(function(index,xmlPage){
+                          pages.push([$(xmlPage).find('PageName')[0].textContent, $(xmlPage).find('TemplateFile')[0].textContent] +'?PageID=' + $(xmlPage).find('PageID')[0].textContent]);
+                        });
+
+                        $.each(pages, function(index, item) {
+                              $(element_id).get(0).options[$(element_id).get(0).options.length] = new Option(decodeURIComponent(item[0]), item[1]);
+                          });
+                      },
+                      error:function (xhr, ajaxOptions, thrownError){
+                          alert(xhr.status);
+                          alert(thrownError);
+                      }
+                  });
+              },
 						commit : function( data )
 						{
 							if ( !data.localPage )
